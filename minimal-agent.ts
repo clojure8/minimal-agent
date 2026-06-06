@@ -87,16 +87,19 @@ async function callLLM(messages: Msg[]) {
   return ((await res.json()) as any).choices[0].message;
 }
 
+// ── 共享上下文：整个 Agent 生命周期内复用，跨多轮对话保留记忆 ────────────
+// messages 即是 Agent 上下文，也是消息队列；只初始化一次 system prompt。
+const messages: Msg[] = [
+  {
+    role: "system",
+    content: "You are a helpful assistant. Use tools when needed.",
+  },
+];
+
 // ── Agent loop: while + tool dispatch + context array ─────────────
 async function agent(prompt: string) {
-  //messages 即是Agent上下文，也是消息队列
-  const messages: Msg[] = [
-    {
-      role: "system",
-      content: "You are a helpful assistant. Use tools when needed.",
-    },
-    { role: "user", content: prompt },
-  ];
+  // 把本轮用户输入追加到共享上下文，而不是新建数组
+  messages.push({ role: "user", content: prompt });
 
   while (true) {
     const reply = await callLLM(messages);
