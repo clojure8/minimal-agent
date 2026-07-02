@@ -1,6 +1,6 @@
 # 极简 Agent（minimal-agent）
 
-一个用单文件 `minimal-agent.ts`（约 160 行）实现的最小化 LLM Agent，演示了「工具调用循环（tool-use loop）」这一 Agent 的核心机制：模型自主决定何时调用工具，拿到结果后继续思考，直到给出最终回答。
+一个用单文件 `src/agent.ts`（约 160 行）实现的最小化 LLM Agent，演示了「工具调用循环（tool-use loop）」这一 Agent 的核心机制：模型自主决定何时调用工具，拿到结果后继续思考，直到给出最终回答。
 
 支持任意 **OpenAI 兼容** 的 `/chat/completions` 接口（DeepSeek、OpenAI、Moonshot、通义千问、本地 Ollama 等）。
 
@@ -72,7 +72,7 @@ npm start
 极简 Agent (输入 exit 退出)
 
 > 列出当前目录的文件
-  [list_files]({"path":"."}) → - minimal-agent.ts...
+  [list_files]({"path":"."}) → - src/agent.ts...
 
 当前目录下有 ...
 

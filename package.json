@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "description": "极简 Agent — a minimal LLM agent with a tool-use loop",
   "type": "module",
-  "main": "minimal-agent.ts",
+  "main": "src/agent.ts",
   "scripts": {
-    "start": "tsx --env-file-if-exists=.env minimal-agent.ts",
-    "dev": "tsx watch --env-file-if-exists=.env minimal-agent.ts",
+    "start": "tsx --env-file-if-exists=.env src/agent.ts",
+    "dev": "tsx watch --env-file-if-exists=.env src/agent.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc"
   },
