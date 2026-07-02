@@ -35,6 +35,9 @@ type Tool = {
   run: (args: any) => string;
 };
 
+// ── 会话级鉴权状态：authenticate 成功后置位，受保护的工具据此放行 ──────────
+const authState = { authenticated: false, username: "" };
+
 // ── 定义工具 ──────────────────────────────────────
 const tools: Tool[] = [
   {
@@ -62,6 +65,60 @@ const tools: Tool[] = [
       required: ["path"],
     },
     run: ({ path }) => readFileSync(path, "utf-8").slice(0, 4000),
+  },
+  {
+    name: "authenticate",
+    desc: "鉴权工具：校验 JWT 令牌并返回鉴权结果（fake，仅演示，恒定验证成功）",
+    params: {
+      type: "object",
+      properties: {
+        token: { type: "string", description: "JWT 令牌" },
+      },
+      required: ["token"],
+    },
+    run: ({ token }) => {
+      // fake：不做真实签名校验，尝试解析 payload 中的 sub 作为用户名
+      let username = "unknown";
+      try {
+        const payload = JSON.parse(
+          Buffer.from(token.split(".")[1] ?? "", "base64").toString("utf-8"),
+        );
+        username = payload.sub ?? payload.username ?? username;
+      } catch {
+        // 解析失败也照常返回成功（fake）
+      }
+      // 置位鉴权状态，供受保护的工具校验
+      authState.authenticated = true;
+      authState.username = username;
+      return JSON.stringify({
+        valid: true,
+        username,
+        message: "JWT 验证成功（fake）",
+      });
+    },
+  },
+  {
+    name: "get_user_info",
+    desc: "查询用户信息的服务接口（fake，仅演示）",
+    params: {
+      type: "object",
+      properties: { username: { type: "string" } },
+      required: ["username"],
+    },
+    run: ({ username }) => {
+      // 受保护接口：必须先通过 authenticate 鉴权
+      if (!authState.authenticated) {
+        return JSON.stringify({
+          error: "未鉴权：请先调用 authenticate 工具校验 JWT 后再查询用户信息",
+        });
+      }
+      return JSON.stringify({
+        username,
+        role: "admin",
+        email: `${username}@example.com`,
+        permissions: ["read", "write", "delete"],
+      });
+    },
   },
 ];
 
@@ -92,7 +149,9 @@ async function callLLM(messages: Msg[]) {
 const messages: Msg[] = [
   {
     role: "system",
-    content: "You are a helpful assistant. Use tools when needed.",
+    content:
+      "You are a helpful assistant. Use tools when needed. " +
+      "调用 get_user_info 之前，必须先调用 authenticate 完成鉴权；若未鉴权，请先向用户索取 JWT 并鉴权。",
   },
 ];
 
@@ -117,7 +176,7 @@ async function agent(prompt: string) {
         result = `Error: ${e.message}`;
       }
       console.log(
-        `  [${call.function.name}](${args.path}) → ${result.slice(0, 80)}…`,
+        `  [${call.function.name}](${JSON.stringify(args)}) → ${result.slice(0, 80)}…`,
       );
       messages.push({ role: "tool", content: result, tool_call_id: call.id });
     }
